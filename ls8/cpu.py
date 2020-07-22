@@ -104,14 +104,10 @@ class CPU:
         """Run the CPU."""
         running = True
         count = 1
-        print(self.branch_table[0b01000111] == "PRN")
         while running:
-            
             ir = self.ram[self.pc] #instruction_register
             
-
-            if ir in self.branch_table and self.branch_table[ir] == "HLT":
-                running = self.HLT()
+            
             
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
@@ -119,24 +115,23 @@ class CPU:
             if ir in self.branch_table and not self.branch_table[ir] == "HLT" :
                 if self.branch_table[ir] == "LDI":
                     self.LDI(operand_a,operand_b)
-                    print("LDI!!!!")
                 if self.branch_table[ir] == "PRN":
-                    print("PRN!!!!!!!!")
                     self.PRN(operand_a)
                 else:
                     op = self.branch_table[ir]
                     self.alu(op,operand_a,operand_b)
+            
 
-            if ir in self.branch_table:
-                print("TWO",count,"  ir:",ir,self.branch_table[ir],"  pc:",self.pc,"  a:",operand_a,"  b:",operand_b)
-
-            print("IR",bin(ir))
             if (ir & (1 << 7)) >> 7 == 1:
-                self.pc += 2
+                self.pc += 3
             else:
-                self.pc += 1
-
+                self.pc += 2
             count+= 1
+            
+            if ir in self.branch_table and self.branch_table[ir] == "HLT":
+                running = self.HLT()
+
+            
 
 
             
