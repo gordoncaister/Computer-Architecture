@@ -12,8 +12,8 @@ class CPU:
         self.pc = 0
         self.branch_table = {
             0b00000001 : "HLT",
-            0b10000010 : "LDI" ,
-            0b01000111 : "PRN" 
+            0b10000010 : "LDI",
+            0b01000111 : "PRN"
         }
 
     def ram_read(self,mar):   #Memory Address Register
@@ -46,12 +46,21 @@ class CPU:
             self.ram[address] = instruction
             address += 1
 
+    def LDI(self, reg, value):
+        self.reg[reg] = value
 
-    def alu(self, op, reg_a, reg_b):
+    def PRN(self,reg):
+        print(self.reg[reg])
+
+    def alu(self, op, reg_a = None, reg_b = None):
         """ALU operations."""
-
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+        elif op == "LDI":
+            self.LDI(reg_a,reg_b)
+        elif op == "PRN":
+            self.PRN(reg_a)
+        
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -81,23 +90,25 @@ class CPU:
     def run(self):
         """Run the CPU."""
         running = True
-        count = 1
         while running:
             
-            ir = self.ram[self.pc] 
+            ir = self.ram[self.pc] #instruction_register
 
             if ir in self.branch_table and self.branch_table[ir] == "HLT":
                 running = self.HLT()
             
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
+            
+            if ir in self.branch_table and not self.branch_table[ir] == "HLT" :
+                op = self.branch_table[ir]
+                self.alu(op,operand_a,operand_b)
 
             if (ir & (1 << 7)) >> 7 == 1:
                 self.pc += 2
             else:
                 self.pc += 1
 
-            
 
             
 
