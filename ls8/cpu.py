@@ -2,6 +2,8 @@
 
 import sys
 
+
+
 class CPU:
     """Main CPU class."""
 
@@ -9,12 +11,20 @@ class CPU:
         """Construct a new CPU."""
         self.ram = [0] * 256
         self.reg = [0] * 8
-        self.pc = 0
+        self.pc = 0 # program counter
+        self.sp = 7 # stack pointer
+        self.fl = 0 # flag
         self.branch_table = {
             0b00000001 : "HLT",
             0b10000010 : "LDI",
             0b01000111 : "PRN",
-            0b10100010 : "MUL"
+            0b10100010 : "MUL",
+            0b01000110 : "POP",
+            0b10100111 : "CMP",
+            0b01010100 : "JMP",
+            "less" : 0b00000100,
+            "greater" : 0b00000010,
+            "equal" : 0b00000001
         }
 
     def ram_read(self,mar):   #Memory Address Register
@@ -55,6 +65,8 @@ class CPU:
             self.ram[address] = instruction
             address += 1
 
+        self.reg[self.sp] = 0xf4
+
     def LDI(self, reg, value):
         self.reg[reg] = value
 
@@ -73,7 +85,20 @@ class CPU:
             self.PRN(reg_a)
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
-        
+        elif op == "CMP":
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.fl = self.branch_table["equal"]
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.fl = self.branch_table["greater"]
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.fl = self.branch_table["less"]
+        elif op == "JMP":
+            self.pc = self.reg[reg_a]
+        elif op == "JEQ":
+            if self.fl & self.branch_table["equal"]:
+                self.pc = self.reg[reg_a]
+        elif op == "JNE": 
+
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -103,11 +128,9 @@ class CPU:
     def run(self):
         """Run the CPU."""
         running = True
-        count = 1
+
         while running:
             ir = self.ram[self.pc] #instruction_register
-            
-            
             
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
@@ -121,13 +144,11 @@ class CPU:
                     op = self.branch_table[ir]
                     self.alu(op,operand_a,operand_b)
             
-
             if (ir & (1 << 7)) >> 7 == 1:
-                self.pc += 3
+                self.pc += 3    
             else:
                 self.pc += 2
-            count+= 1
-            
+   
             if ir in self.branch_table and self.branch_table[ir] == "HLT":
                 running = self.HLT()
 
