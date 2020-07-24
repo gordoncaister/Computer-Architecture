@@ -77,7 +77,7 @@ class CPU:
 
     def alu(self, op, reg_a = None, reg_b = None):
         """ALU operations."""
-
+        
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "LDI":
@@ -94,16 +94,19 @@ class CPU:
             elif self.reg[reg_a] < self.reg[reg_b]:
                 self.fl = self.branch_table["less"]
         elif op == "JMP":
-            print(op, "jumping")
-            self.pc = self.reg[reg_a+2]
+            self.pc = self.reg[reg_a]
         elif op == "JEQ":
-            print(op, "jumping equal")
-            if self.fl & self.branch_table["equal"]:
+            if self.fl == self.branch_table["equal"]:
                 self.pc = self.reg[reg_a]
+            else:
+                self.pc +=2
+            
         elif op == "JNE": 
-            print(op, "jumping not equal")
-            if not self.fl & self.branch_table["equal"]:
+            if not self.fl == self.branch_table["equal"]:
                 self.pc = self.reg[reg_a]
+            else:
+                self.pc +=2
+            
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -116,7 +119,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
+            # self.fl,
             #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -133,15 +136,13 @@ class CPU:
     def run(self):
         """Run the CPU."""
         running = True
-
+        count = 8
         while running:
             ir = self.ram[self.pc] #instruction_register
-            
             operand_a = self.ram_read(self.pc+1)
             operand_b = self.ram_read(self.pc+2)
             
             if ir in self.branch_table and not self.branch_table[ir] == "HLT" :
-                # print(self.pc, self.branch_table[ir] )
                 if self.branch_table[ir] == "LDI":
                     self.LDI(operand_a,operand_b)
                 if self.branch_table[ir] == "PRN":
@@ -149,14 +150,19 @@ class CPU:
                 else:
                     op = self.branch_table[ir]
                     self.alu(op,operand_a,operand_b)
-            
-            if (ir & (1 << 7)) >> 7 == 1:
-                self.pc += 3    
-            else:
-                self.pc += 2
-   
+
             if ir in self.branch_table and self.branch_table[ir] == "HLT":
                 running = self.HLT()
+
+            if not self.branch_table[ir] == "JNE" and not self.branch_table[ir] == "JEQ" and not self.branch_table[ir] == "JMP":
+                if (ir & (1 << 7)) >> 7 == 1:
+                    self.pc += 3
+                    count += 3
+                else:
+                    self.pc += 2
+                    count += 2
+            else:
+                count+=2
 
             
 
