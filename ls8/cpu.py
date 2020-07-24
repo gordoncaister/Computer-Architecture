@@ -22,6 +22,8 @@ class CPU:
             0b01000110 : "POP",
             0b10100111 : "CMP",
             0b01010100 : "JMP",
+            0b01010101 : "JEQ",
+            0b01010110 : "JNE",
             "less" : 0b00000100,
             "greater" : 0b00000010,
             "equal" : 0b00000001
@@ -81,7 +83,6 @@ class CPU:
         elif op == "LDI":
             self.LDI(reg_a,reg_b)
         elif op == "PRN":
-            print("PRINTING")
             self.PRN(reg_a)
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
@@ -93,12 +94,16 @@ class CPU:
             elif self.reg[reg_a] < self.reg[reg_b]:
                 self.fl = self.branch_table["less"]
         elif op == "JMP":
-            self.pc = self.reg[reg_a]
+            print(op, "jumping")
+            self.pc = self.reg[reg_a+2]
         elif op == "JEQ":
+            print(op, "jumping equal")
             if self.fl & self.branch_table["equal"]:
                 self.pc = self.reg[reg_a]
         elif op == "JNE": 
-
+            print(op, "jumping not equal")
+            if not self.fl & self.branch_table["equal"]:
+                self.pc = self.reg[reg_a]
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -136,6 +141,7 @@ class CPU:
             operand_b = self.ram_read(self.pc+2)
             
             if ir in self.branch_table and not self.branch_table[ir] == "HLT" :
+                # print(self.pc, self.branch_table[ir] )
                 if self.branch_table[ir] == "LDI":
                     self.LDI(operand_a,operand_b)
                 if self.branch_table[ir] == "PRN":
